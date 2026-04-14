@@ -1,0 +1,6 @@
+services:
+  dialogue-agent-mcp:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    # port 8000 is internal only — not exposed to the host
