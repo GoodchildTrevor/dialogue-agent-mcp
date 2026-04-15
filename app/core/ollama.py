@@ -6,7 +6,6 @@ import httpx
 
 from app.core.config import Settings
 
-
 class OllamaClient:
     def __init__(self, settings: Settings) -> None:
         self._client = httpx.AsyncClient(
@@ -20,7 +19,10 @@ class OllamaClient:
             json={"model": model, "prompt": prompt},
         )
         response.raise_for_status()
-        return response.json().get("embedding", [])
+        embedding = response.json().get("embedding")
+        if not embedding:
+            raise ValueError("Ollama returned empty embedding")
+        return embedding
 
     async def aclose(self) -> None:
         await self._client.aclose()

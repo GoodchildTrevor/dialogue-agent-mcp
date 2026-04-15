@@ -1,7 +1,6 @@
-from functools import lru_cache
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_settings_cache = None
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -16,7 +15,7 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
     EMBEDDING_MODEL: str = "nomic-embed-text"
 
-    POSTGRES_URL: str = "postgresql+asyncpg://dialogue_bot:dialogue_bot@postgres:5432/dialogue_bot"
+    POSTGRES_URL: str
 
     DOCUMENT_SEARCHER_URL: str = "http://document_searcher:8091"
     FILE_VIEWER_URL: str = "http://file_viewer:8092"
@@ -30,7 +29,16 @@ class Settings(BaseSettings):
     MAX_RETRIES: int = 3
     INITIAL_BACKOFF: float = 0.5
 
-
-@lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()
+    global _settings_cache
+    if _settings_cache is None:
+        _settings_cache = Settings()
+    return _settings_cache
+
+def override_settings(settings: Settings) -> None:
+    global _settings_cache
+    _settings_cache = settings
+
+def reset_settings() -> None:
+    global _settings_cache
+    _settings_cache = None

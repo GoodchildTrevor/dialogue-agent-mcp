@@ -4,7 +4,7 @@ from typing import Any
 from app import _http, log, settings
 
 
-async def _call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, Any]:
+async def call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, Any]:
     """POST arguments to an ExternalToolAdapter's /invoke endpoint with retry logic."""
     if not base_url or not isinstance(base_url, str):
         raise ValueError("base_url must be a non-empty string")

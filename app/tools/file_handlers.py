@@ -1,7 +1,7 @@
 from typing import Any
 
 from app import mcp, settings
-from app.utils.external import _call_external 
+from app.utils.external import call_external
 from app.utils.validations import (
     _validate_format,
     _validate_file_path,
@@ -32,7 +32,7 @@ async def file_viewer(
         args["path"] = path
     if page is not None:
         args["page"] = page
-    return await _call_external(settings.FILE_VIEWER_URL, args)
+    return await call_external(settings.FILE_VIEWER_URL, args)
 
 
 @mcp.tool()
@@ -45,7 +45,7 @@ async def file_converter(
     source_path = _validate_file_path(source_path)
     target_format = _validate_format(target_format)
 
-    return await _call_external(
+    return await call_external(
         settings.FILE_CONVERTER_URL,
         {"source_path": source_path, "target_format": target_format},
     )

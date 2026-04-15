@@ -5,7 +5,7 @@ from sqlalchemy import select
 from app import _ollama, log, mcp, settings
 from app.db.session import async_session_maker
 from app.db.models import Message
-from app.utils.external import _call_external 
+from app.utils.external import call_external
 from app.utils.validations import (
     _validate_query,
     _validate_user_id,
@@ -82,7 +82,7 @@ async def document_searcher(
         args["filters"] = filters
     if limit is not None:
         args["limit"] = limit
-    return await _call_external(settings.DOCUMENT_SEARCHER_URL, args)
+    return await call_external(settings.DOCUMENT_SEARCHER_URL, args)
 
 
 @mcp.tool()
@@ -98,4 +98,4 @@ async def web_searcher(
     args: dict[str, Any] = {"query": query}
     if limit is not None:
         args["limit"] = limit
-    return await _call_external(settings.WEB_SEARCHER_URL, args)
+    return await call_external(settings.WEB_SEARCHER_URL, args)
