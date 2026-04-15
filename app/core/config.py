@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     TOOL_REQUEST_TIMEOUT_SECONDS: float = 45.0
     HISTORY_SEARCH_LIMIT: int = 5
 
+    MAX_RETRIES: int = 3
+    INITIAL_BACKOFF: float = 0.5
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
