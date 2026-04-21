@@ -1,7 +1,7 @@
 from typing import Any
 
 from app import mcp, settings
-from app.utils.external import _call_external 
+from app.utils.external import call_external
 from app.utils.validations import (
     _validate_format,
     _validate_query,
@@ -14,7 +14,6 @@ async def image_generator(
     size: str | None = None,
 ) -> dict[str, Any]:
     """Generate images through an external image generation API."""
-    # Input validation
     prompt = _validate_query(prompt, max_length=2000)
     if size is not None:
         if not isinstance(size, str):
@@ -27,4 +26,4 @@ async def image_generator(
     args: dict[str, Any] = {"prompt": prompt}
     if size is not None:
         args["size"] = size
-    return await _call_external(settings.IMAGE_GENERATOR_URL, args)
+    return await call_external(settings.IMAGE_GENERATOR_URL, args)
