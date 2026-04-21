@@ -1,3 +1,4 @@
+import asyncio
 import httpx
 from typing import Any
 
@@ -34,47 +35,31 @@ async def call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, A
 
             return payload
 
-        except httpx.TimeoutException as e:
-            last_error = e
-            if attempt < settings.MAX_RETRIES - 1:
-                backoff = settings.INITIAL_BACKOFF * (2 ** attempt)
-                log.warning(
-                    f"Timeout calling {base_url} (attempt {attempt + 1}/{settings.MAX_RETRIES}), "
-                    f"retrying in {backoff}s"
-                )
-                import asyncio
-                await asyncio.sleep(backoff)
-            else:
-                log.error(f"Timeout calling {base_url} after {settings.MAX_RETRIES} attempts")
-
         except httpx.HTTPStatusError as e:
-            log.error(
-                f"HTTP error calling {base_url}: status={e.response.status_code}, "
-                f"body={e.response.text[:500]}"
-            )
-            if e.response.status_code >= 500 and attempt < settings.MAX_RETRIES - 1:
-                backoff = settings.INITIAL_BACKOFF * (2 ** attempt)
-                log.info(
-                    f"Server error from {base_url} (attempt {attempt + 1}/{settings.MAX_RETRIES}), "
-                    f"retrying in {backoff}s"
+            if 400 <= e.response.status_code < 500:
+                log.error(
+                    f"Client error calling {base_url}: status={e.response.status_code}, "
+                    f"body={e.response.text[:500]}"
                 )
-                import asyncio
-                await asyncio.sleep(backoff)
-            else:
                 raise
-
-        except httpx.RequestError as e:
+            
             last_error = e
-            if attempt < settings.MAX_RETRIES - 1:
-                backoff = settings.INITIAL_BACKOFF * (2 ** attempt)
-                log.warning(
-                    f"Request error calling {base_url} (attempt {attempt + 1}/{settings.MAX_RETRIES}), "
-                    f"retrying in {backoff}s: {e}"
-                )
-                import asyncio
-                await asyncio.sleep(backoff)
-            else:
-                log.error(f"Request error calling {base_url} after {settings.MAX_RETRIES} attempts: {e}")
+            log.warning(
+                f"Server error from {base_url} (attempt {attempt + 1}/{settings.MAX_RETRIES}): "
+                f"status={e.response.status_code}"
+            )
+
+        except (httpx.TimeoutException, httpx.RequestError) as e:
+            last_error = e
+            log.warning(
+                f"Network/Timeout error calling {base_url} "
+                f"(attempt {attempt + 1}/{settings.MAX_RETRIES}): {e}"
+            )
+
+        if last_error and attempt < settings.MAX_RETRIES - 1:
+            backoff = settings.INITIAL_BACKOFF * (2 ** attempt)
+            log.info(f"Retrying in {backoff}s...")
+            await asyncio.sleep(backoff)
 
     raise RuntimeError(
         f"Failed to call external service {base_url} after {settings.MAX_RETRIES} attempts"

@@ -20,7 +20,7 @@ async def search_history(
     limit: int = 5,
 ) -> dict[str, Any]:
     """Semantic search over the user's previous messages stored in PostgreSQL/PGvector."""
-    # Input validation
+
     query = _validate_query(query)
     user_id = _validate_user_id(user_id)
     limit = _validate_limit(limit, default=5, max_val=10)
@@ -71,7 +71,6 @@ async def document_searcher(
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Search corporate documents via an external retrieval API."""
-    # Input validation
     query = _validate_query(query)
     if filters is not None and not isinstance(filters, dict):
         raise TypeError("filters must be a dictionary")
@@ -91,7 +90,6 @@ async def web_searcher(
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Search the public web using an external search service."""
-    # Input validation
     query = _validate_query(query)
     limit = _validate_limit(limit, default=None)
 
