@@ -1,8 +1,9 @@
 from typing import Any
 
+import httpx
 from sqlalchemy import select
 
-from app import _ollama, log, mcp, settings
+from app import _http, log, mcp, settings
 from app.db.session import async_session_maker
 from app.db.models import Message
 from app.utils.external import call_external
@@ -64,6 +65,7 @@ async def search_history(
         ],
     }
 
+
 @mcp.tool()
 async def document_searcher(
     query: str,
@@ -89,11 +91,48 @@ async def web_searcher(
     query: str,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Search the public web using an external search service."""
+    """Search the public web using a self-hosted SearXNG instance."""
     query = _validate_query(query)
-    limit = _validate_limit(limit, default=None)
+    limit = _validate_limit(limit, default=10)
 
-    args: dict[str, Any] = {"query": query}
-    if limit is not None:
-        args["limit"] = limit
-    return await call_external(settings.WEB_SEARCHER_URL, args)
+    params = {
+        "q": query,
+        "format": "json",
+        "pageno": 1,
+    }
+
+    base_url = settings.WEB_SEARCHER_URL.rstrip("/")
+    search_url = f"{base_url}/search"
+
+    try:
+        response = await _http.get(
+            search_url,
+            params=params,
+            timeout=settings.TOOL_REQUEST_TIMEOUT_SECONDS,
+            headers={"Accept": "application/json"},
+        )
+        response.raise_for_status()
+        data = response.json()
+    except (httpx.TimeoutException, httpx.ConnectError, httpx.RequestError) as e:
+        log.warning(f"SearXNG unreachable at {search_url}: {e}")
+        return {"query": query, "results": [], "error": "Web search service is currently unavailable"}
+    except httpx.HTTPStatusError as e:
+        log.error(f"SearXNG returned HTTP {e.response.status_code} for query '{query}'")
+        return {"query": query, "results": [], "error": f"Web search returned status {e.response.status_code}"}
+    except ValueError as e:
+        log.error(f"SearXNG returned invalid JSON: {e}")
+        return {"query": query, "results": [], "error": "Web search returned invalid response"}
+
+    raw_results: list[dict] = data.get("results", [])
+
+    results = [
+        {
+            "title": r.get("title", ""),
+            "url": r.get("url", ""),
+            "snippet": r.get("content", ""),
+        }
+        for r in raw_results[:limit]
+        if r.get("url")
+    ]
+
+    return {"query": query, "results": results}
