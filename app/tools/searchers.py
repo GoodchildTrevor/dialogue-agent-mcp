@@ -3,7 +3,7 @@ from typing import Any
 import httpx
 from sqlalchemy import select
 
-from app import _http, log, mcp, settings
+from app import _http, _ollama, log, mcp, settings
 from app.db.session import async_session_maker
 from app.db.models import Message
 from app.utils.external import call_external
@@ -72,18 +72,67 @@ async def document_searcher(
     filters: dict[str, Any] | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Search corporate documents via an external retrieval API."""
+    """Search corporate documents via qdrant-searcher hybrid search endpoint."""
     query = _validate_query(query)
     if filters is not None and not isinstance(filters, dict):
         raise TypeError("filters must be a dictionary")
-    limit = _validate_limit(limit, default=None)
+    limit = _validate_limit(limit, default=10)
 
-    args: dict[str, Any] = {"query": query}
-    if filters is not None:
-        args["filters"] = filters
-    if limit is not None:
-        args["limit"] = limit
-    return await call_external(settings.DOCUMENT_SEARCHER_URL, args)
+    collection_name = (filters or {}).get("collection", settings.DOCUMENT_SEARCHER_DEFAULT_COLLECTION)
+    method = (filters or {}).get("method", "hybrid")
+    if method not in ("hybrid", "dense"):
+        method = "hybrid"
+
+    base_url = settings.DOCUMENT_SEARCHER_URL.rstrip("/")
+    search_url = f"{base_url}/vector_search"
+
+    payload = {
+        "text": query,
+        "method": method,
+        "collection_name": collection_name,
+        "top_k": limit,
+    }
+
+    headers = {
+        "Authorization": f"Bearer {settings.DOCUMENT_SEARCHER_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        response = await _http.post(
+            search_url,
+            json=payload,
+            headers=headers,
+            timeout=settings.TOOL_REQUEST_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except (httpx.TimeoutException, httpx.ConnectError, httpx.RequestError) as e:
+        log.warning(f"qdrant-searcher unreachable at {search_url}: {e}")
+        return {"query": query, "results": [], "error": "Document search service is currently unavailable"}
+    except httpx.HTTPStatusError as e:
+        log.error(f"qdrant-searcher returned HTTP {e.response.status_code} for query '{query}'")
+        return {"query": query, "results": [], "error": f"Document search returned status {e.response.status_code}"}
+    except ValueError as e:
+        log.error(f"qdrant-searcher returned invalid JSON: {e}")
+        return {"query": query, "results": [], "error": "Document search returned invalid response"}
+
+    raw_docs: list[dict] = data.get("documents", [])
+
+    results = [
+        {
+            "id": doc.get("id", ""),
+            "content": doc.get("payload", {}).get("text", ""),
+            "score": doc.get("score", 0.0),
+            "metadata": {
+                k: v for k, v in doc.get("payload", {}).items() if k != "text"
+            } | {"source": doc.get("source", "")},
+        }
+        for doc in raw_docs
+        if doc
+    ]
+
+    return {"query": query, "results": results}
 
 
 @mcp.tool()

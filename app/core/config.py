@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     POSTGRES_URL: str
 
     DOCUMENT_SEARCHER_URL: str = "http://document_searcher:8091"
+    DOCUMENT_SEARCHER_API_KEY: str = ""
+    DOCUMENT_SEARCHER_DEFAULT_COLLECTION: str = "documents"
     FILE_VIEWER_URL: str = "http://file_viewer:8092"
     WEB_SEARCHER_URL: str = "http://web_searcher:8093"
     IMAGE_GENERATOR_URL: str = "http://image_generator:8094"
