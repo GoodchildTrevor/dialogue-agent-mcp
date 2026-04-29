@@ -7,9 +7,16 @@ for MCP calls without changing argument schemas.
 
 Transport: Streamable HTTP (default fastmcp transport).
 Endpoint:  POST /mcp  (SSE fallback: GET /mcp)
+
+Auth: requests without a valid Authorization: Bearer <token> header
+      receive HTTP 401. Token is read from MCP_AUTH_TOKEN env var.
 """
 from __future__ import annotations
 
-from app import mcp
+import os
 
-mcp_app = mcp.http_app()
+from app import mcp
+from app.middleware import BearerAuthMiddleware
+
+_token = os.environ["MCP_AUTH_TOKEN"]
+mcp_app = BearerAuthMiddleware(mcp.http_app(), token=_token)
