@@ -13,12 +13,15 @@ settings = get_settings()
 logging.basicConfig(level=settings.LOG_LEVEL)
 log = logging.getLogger(__name__)
 
+http_client: httpx.AsyncClient | None = None
+
 
 @asynccontextmanager
 async def lifespan(app: Any):
+    global http_client
     token = current_app.set(app)
 
-    app.state.http = httpx.AsyncClient(
+    http_client = httpx.AsyncClient(
         timeout=settings.TOOL_REQUEST_TIMEOUT_SECONDS,
         headers={"User-Agent": "mcp-client/1.0"},
     )
@@ -28,7 +31,8 @@ async def lifespan(app: Any):
     try:
         yield
     finally:
-        await app.state.http.aclose()
+        await http_client.aclose()
+        http_client = None
         current_app.reset(token)
         log.info("dialogue-agent-mcp stopped")
 

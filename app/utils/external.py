@@ -2,8 +2,7 @@ import asyncio
 import httpx
 from typing import Any
 
-from app import log, settings
-from app.context import current_app
+from app import log, settings, http_client
 
 
 async def call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -13,15 +12,15 @@ async def call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, A
     if not isinstance(arguments, dict):
         raise TypeError("arguments must be a dictionary")
 
-    app = current_app.get()
-    client: httpx.AsyncClient = app.state.http
+    if http_client is None:
+        raise RuntimeError("http_client is not initialised (lifespan not started)")
 
     url = base_url.rstrip("/") + "/invoke"
     last_error = None
 
     for attempt in range(settings.MAX_RETRIES):
         try:
-            response = await client.post(
+            response = await http_client.post(
                 url,
                 json={"arguments": arguments},
             )
