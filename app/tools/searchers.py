@@ -1,6 +1,6 @@
 from typing import Any
 
-from app import _http, log, mcp, settings
+from app import log, mcp, settings
 from app.context import current_app
 from app.utils.validations import (
     _validate_query,

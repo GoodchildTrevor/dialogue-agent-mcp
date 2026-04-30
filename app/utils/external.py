@@ -2,7 +2,8 @@ import asyncio
 import httpx
 from typing import Any
 
-from app import _http, log, settings
+from app import log, settings
+from app.context import current_app
 
 
 async def call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -12,15 +13,17 @@ async def call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, A
     if not isinstance(arguments, dict):
         raise TypeError("arguments must be a dictionary")
 
+    app = current_app.get()
+    client: httpx.AsyncClient = app.state.http
+
     url = base_url.rstrip("/") + "/invoke"
     last_error = None
 
     for attempt in range(settings.MAX_RETRIES):
         try:
-            response = await _http.post(
+            response = await client.post(
                 url,
                 json={"arguments": arguments},
-                timeout=settings.TOOL_REQUEST_TIMEOUT_SECONDS,
             )
             response.raise_for_status()
 
@@ -42,7 +45,7 @@ async def call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, A
                     f"body={e.response.text[:500]}"
                 )
                 raise
-            
+
             last_error = e
             log.warning(
                 f"Server error from {base_url} (attempt {attempt + 1}/{settings.MAX_RETRIES}): "
