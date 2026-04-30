@@ -12,11 +12,6 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
-    OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
-    EMBEDDING_MODEL: str = "nomic-embed-text"
-
-    POSTGRES_URL: str
-
     DOCUMENT_SEARCHER_URL: str = "http://document_searcher:8091"
     DOCUMENT_SEARCHER_API_KEY: str = ""
     DOCUMENT_SEARCHER_DEFAULT_COLLECTION: str = "documents"
@@ -44,3 +39,4 @@ def override_settings(settings: Settings) -> None:
 def reset_settings() -> None:
     global _settings_cache
     _settings_cache = None
+    
