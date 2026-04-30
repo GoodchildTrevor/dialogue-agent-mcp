@@ -17,6 +17,7 @@ import os
 
 from app import mcp
 from app.middleware import BearerAuthMiddleware
+import app.tools  # noqa: F401 — triggers app/tools/__init__.py which registers all @mcp.tool() decorators
 
 _token = os.environ["MCP_AUTH_TOKEN"]
 mcp_app = BearerAuthMiddleware(mcp.http_app(), token=_token)
