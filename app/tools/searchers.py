@@ -2,11 +2,8 @@ from typing import Any
 
 import httpx
 
-from app import log, mcp, settings, http_client
-from app.utils.validations import (
-    _validate_query,
-    _validate_limit,
-)
+from app import log, mcp, settings, get_http_client
+from app.utils.validations import _validate_query, _validate_limit
 
 
 @mcp.tool()
@@ -16,8 +13,7 @@ async def document_searcher(
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Search corporate documents via qdrant-searcher hybrid search endpoint."""
-    if http_client is None:
-        raise RuntimeError("http_client is not initialised (lifespan not started)")
+    client = get_http_client()
 
     query = _validate_query(query)
     if filters is not None and not isinstance(filters, dict):
@@ -45,7 +41,7 @@ async def document_searcher(
     }
 
     try:
-        response = await http_client.post(
+        response = await client.post(
             search_url,
             json=payload,
             headers=headers,
@@ -87,8 +83,7 @@ async def web_searcher(
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Search the public web using a self-hosted SearXNG instance."""
-    if http_client is None:
-        raise RuntimeError("http_client is not initialised (lifespan not started)")
+    client = get_http_client()
 
     query = _validate_query(query)
     limit = _validate_limit(limit, default=10)
@@ -103,7 +98,7 @@ async def web_searcher(
     search_url = f"{base_url}/search"
 
     try:
-        response = await http_client.get(
+        response = await client.get(
             search_url,
             params=params,
             timeout=settings.TOOL_REQUEST_TIMEOUT_SECONDS,
