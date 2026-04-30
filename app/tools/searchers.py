@@ -1,8 +1,7 @@
 from typing import Any
 
-import httpx
-
 from app import _http, log, mcp, settings
+from app.context import current_app
 from app.utils.validations import (
     _validate_query,
     _validate_limit,
@@ -16,6 +15,8 @@ async def document_searcher(
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Search corporate documents via qdrant-searcher hybrid search endpoint."""
+    app = current_app.get()
+    client = app.state.http
     query = _validate_query(query)
     if filters is not None and not isinstance(filters, dict):
         raise TypeError("filters must be a dictionary")
@@ -84,6 +85,8 @@ async def web_searcher(
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Search the public web using a self-hosted SearXNG instance."""
+    app = current_app.get()
+    client = app.state.http
     query = _validate_query(query)
     limit = _validate_limit(limit, default=10)
 
