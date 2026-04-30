@@ -41,4 +41,12 @@ async def lifespan(app: Any):
         http_client = None
         current_app.reset(token)
         log.info("dialogue-agent-mcp stopped")
-        
+
+mcp = FastMCP(
+    name="dialogue-agent-mcp",
+    instructions=(
+        "Tools from the dialogue-agent: search history, search documents, "
+        "browse the web, view/convert files, and generate images."
+    ),
+    lifespan=lifespan,
+)
