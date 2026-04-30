@@ -26,7 +26,7 @@ async def lifespan(app: Any):
         headers={"User-Agent": "mcp-client/1.0"},
     )
 
-    log.info("dialogue-agent-mcp started (v%s)", settings.VERSION)
+    log.info("dialogue-agent-mcp started (v%s)")
 
     try:
         yield
