@@ -6,9 +6,7 @@ import httpx
 from fastmcp import FastMCP
 
 from app.core.config import get_settings
-from app.storage.paths import ensure_export_dir
-from app.core.templates import TemplateRegistry
-from app.context import current_app               
+from app.context import current_app
 
 settings = get_settings()
 
@@ -19,9 +17,6 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: Any):
     token = current_app.set(app)
-
-    ensure_export_dir(settings.FILE_EXPORT_DIR)
-    TemplateRegistry.init(settings.DOCS_TEMPLATE_PATH)
 
     app.state.http = httpx.AsyncClient(
         timeout=settings.TOOL_REQUEST_TIMEOUT_SECONDS,
