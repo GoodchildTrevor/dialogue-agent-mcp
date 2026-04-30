@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import Any
@@ -7,35 +6,43 @@ import httpx
 from fastmcp import FastMCP
 
 from app.core.config import get_settings
+from app.storage.paths import ensure_export_dir
+from app.core.templates import TemplateRegistry
+from app.context import current_app               
 
 settings = get_settings()
+
 logging.basicConfig(level=settings.LOG_LEVEL)
 log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: Any):
-    from storage.paths import ensure_export_dir
-    from app.core.templates import TemplateRegistry
+    token = current_app.set(app)
 
     ensure_export_dir(settings.FILE_EXPORT_DIR)
     TemplateRegistry.init(settings.DOCS_TEMPLATE_PATH)
-    
+
     app.state.http = httpx.AsyncClient(
         timeout=settings.TOOL_REQUEST_TIMEOUT_SECONDS,
         headers={"User-Agent": "mcp-client/1.0"},
     )
 
-    log.info("file-converter-mcp started (v%s)", settings.VERSION)
-    yield
+    log.info("dialogue-agent-mcp started (v%s)", settings.VERSION)
 
-    await app.state.http.aclose()
-    log.info("file-converter-mcp stopped")
+    try:
+        yield
+    finally:
+        await app.state.http.aclose()
+        current_app.reset(token)
+        log.info("dialogue-agent-mcp stopped")
 
 
 mcp = FastMCP(
     name="dialogue-agent-mcp",
-    instructions="Tools from the dialogue-agent: search history, search documents, "
-                 "browse the web, view/convert files, and generate images.",
+    instructions=(
+        "Tools from the dialogue-agent: search history, search documents, "
+        "browse the web, view/convert files, and generate images."
+    ),
     lifespan=lifespan,
 )
