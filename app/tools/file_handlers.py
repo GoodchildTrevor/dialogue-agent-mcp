@@ -13,8 +13,13 @@ async def file_viewer(
     path: str | None = None,
     page: int | None = None,
 ) -> dict[str, Any]:
-    """Preview or read file contents through an external file service."""
-    # Input validation
+    """Preview or read file contents through an external file service.
+
+    :param file_id: The ID of the file to preview or read.
+    :param path: The path of the file to preview or read.
+    :param page: The page number to preview or read.
+    :return: The preview or read of the file.
+    """
     if file_id is None and path is None:
         raise ValueError("either file_id or path must be provided")
     if file_id is not None and not isinstance(file_id, str):
@@ -40,8 +45,12 @@ async def file_converter(
     source_path: str,
     target_format: str,
 ) -> dict[str, Any]:
-    """Convert files between supported formats through an external conversion API."""
-    # Input validation
+    """Convert files between supported formats through an external conversion API.
+    
+    :param source_path: The path of the source file to convert.
+    :param target_format: The format to convert the source file to.
+    :return: The converted file.
+    """
     source_path = _validate_file_path(source_path)
     target_format = _validate_format(target_format)
 

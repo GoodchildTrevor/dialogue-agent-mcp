@@ -12,7 +12,12 @@ async def document_searcher(
     filters: dict[str, Any] | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Search corporate documents via qdrant-searcher hybrid search endpoint."""
+    """Search corporate documents via qdrant-searcher hybrid search endpoint.
+    :param query: The query to search for.
+    :param filters: The filters to apply to the search.
+    :param limit: The number of results to return.
+    :return: The search results.
+    """
     client = get_http_client()
 
     query = _validate_query(query)
@@ -82,7 +87,11 @@ async def web_searcher(
     query: str,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Search the public web using a self-hosted SearXNG instance."""
+    """Search the public web using a self-hosted SearXNG instance.
+    :param query: The query to search for.
+    :param limit: The number of results to return.
+    :return: The search results.
+    """
     client = get_http_client()
 
     query = _validate_query(query)
