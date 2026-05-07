@@ -3,4 +3,10 @@ services:
     build: .
     env_file: .env
     restart: unless-stopped
-    # port 8000 is internal only — not exposed to the host
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    env_file: .env
+    profiles: ["test"]
