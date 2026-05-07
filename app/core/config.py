@@ -17,11 +17,10 @@ class Settings(BaseSettings):
     DOCUMENT_SEARCHER_DEFAULT_COLLECTION: str = "documents"
     FILE_VIEWER_URL: str = "http://file_viewer:8092"
     WEB_SEARCHER_URL: str = "http://web_searcher:8093"
-    IMAGE_GENERATOR_URL: str = "http://image_generator:8094"
-    FILE_CONVERTER_URL: str = "http://file_converter:8095"
-
+    IMAGE_BACKEND_URL: str = "http://image_generator:8094"
+    
+    IMAGE_VALID_SIZES: list[str] = ["256x256", "512x512", "1024x1024"]
     TOOL_REQUEST_TIMEOUT_SECONDS: float = 45.0
-    HISTORY_SEARCH_LIMIT: int = 5
 
     MAX_RETRIES: int = 3
     INITIAL_BACKOFF: float = 0.5
