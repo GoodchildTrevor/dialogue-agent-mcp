@@ -9,11 +9,13 @@ from app.utils.validations import _validate_query, _validate_limit
 @mcp.tool()
 async def document_searcher(
     query: str,
+    file_id: str | None = None,
     filters: dict[str, Any] | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Search corporate documents via qdrant-searcher hybrid search endpoint.
     :param query: The query to search for.
+    :param file_id: Optional file UUID to restrict search to a specific uploaded file.
     :param filters: The filters to apply to the search.
     :param limit: The number of results to return.
     :return: The search results.
@@ -39,6 +41,9 @@ async def document_searcher(
         "collection_name": collection_name,
         "top_k": limit,
     }
+
+    if file_id:
+        payload["filters"] = {"file_id": file_id}
 
     headers = {
         "Authorization": f"Bearer {settings.DOCUMENT_SEARCHER_API_KEY}",
