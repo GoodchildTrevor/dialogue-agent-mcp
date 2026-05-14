@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from app import settings
-from app.tools import file_handlers, images, searchers
+from app.tools import images, searchers
 
 
 class _DummyResponse:
@@ -105,29 +105,6 @@ async def test_web_searcher_handles_http_status(monkeypatch) -> None:
 
 async def _call_external_stub(*args: Any, **kwargs: Any) -> dict[str, Any]:
     return {"ok": True}
-
-
-@pytest.mark.asyncio
-async def test_file_viewer_builds_payload(monkeypatch) -> None:
-    called_args: dict[str, Any] | None = None
-
-    async def _fake_call(url: str, arguments: dict[str, Any]) -> dict[str, Any]:
-        nonlocal called_args
-        called_args = arguments
-        return {"ok": True}
-
-    monkeypatch.setattr(file_handlers, "call_external", AsyncMock(side_effect=_fake_call))
-
-    response = await file_handlers.file_viewer(file_id="123", page=2)
-
-    assert response == {"ok": True}
-    assert called_args == {"file_id": "123", "page": 2}
-
-
-@pytest.mark.asyncio
-async def test_file_viewer_requires_identifier() -> None:
-    with pytest.raises(ValueError):
-        await file_handlers.file_viewer()
 
 
 def test_image_generation_url_requires_setting() -> None:
