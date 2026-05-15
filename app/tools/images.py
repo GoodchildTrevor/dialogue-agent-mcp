@@ -3,7 +3,7 @@ from typing import Any
 
 import httpx
 
-from app import mcp, settings, http_client
+from app import mcp, settings, get_http_client
 from app.utils.validations import (
     _validate_format,
     _validate_query,
@@ -41,8 +41,7 @@ async def generate_image(
     else:
         size = settings.IMAGE_VALID_SIZES[0]
 
-    if http_client is None:
-        raise RuntimeError("http_client is not initialised (lifespan not started)")
+    http_client = get_http_client()
 
     url = _image_generation_url()
     body: dict[str, Any] = {
