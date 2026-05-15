@@ -15,9 +15,21 @@ from __future__ import annotations
 
 import os
 
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.routing import Mount
+
 from app import mcp
 from app.middleware import BearerAuthMiddleware
 import app.tools
 
 _token = os.environ["MCP_AUTH_TOKEN"]
-mcp_app = BearerAuthMiddleware(mcp.http_app(), token=_token)
+
+# Mount the FastMCP ASGI app inside a Starlette application so that
+# the lifespan is managed by Starlette and our auth middleware only
+# intercepts HTTP requests, not lifespan events.
+mcp_app = Starlette(
+    routes=[Mount("/", app=mcp.http_app())],
+    middleware=[Middleware(BearerAuthMiddleware, token=_token)],
+    lifespan=mcp.http_app().router.lifespan_context,
+)
