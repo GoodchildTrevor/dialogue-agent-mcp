@@ -13,23 +13,42 @@ Auth: requests without a valid Authorization: Bearer <token> header
 """
 from __future__ import annotations
 
+import json
 import os
 
-from starlette.applications import Starlette
-from starlette.middleware import Middleware
-from starlette.routing import Mount
-
+import app.tools  # noqa: F401  register tools with mcp
 from app import mcp
-from app.middleware import BearerAuthMiddleware
-import app.tools
 
 _token = os.environ["MCP_AUTH_TOKEN"]
 
-# Mount the FastMCP ASGI app inside a Starlette application so that
-# the lifespan is managed by Starlette and our auth middleware only
-# intercepts HTTP requests, not lifespan events.
-mcp_app = Starlette(
-    routes=[Mount("/", app=mcp.http_app())],
-    middleware=[Middleware(BearerAuthMiddleware, token=_token)],
-    lifespan=mcp.http_app().router.lifespan_context,
-)
+
+class _BearerASGI:
+    """Minimal pure-ASGI auth wrapper that forwards lifespan unchanged."""
+
+    def __init__(self, inner) -> None:
+        self._inner = inner
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] != "http":
+            # lifespan and websocket pass through untouched
+            await self._inner(scope, receive, send)
+            return
+
+        headers = {k.lower(): v for k, v in scope.get("headers", [])}
+        auth = headers.get(b"authorization", b"").decode()
+        if auth != f"Bearer {_token}":
+            body = json.dumps({"detail": "Unauthorized"}).encode()
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 401,
+                    "headers": [[b"content-type", b"application/json"]],
+                }
+            )
+            await send({"type": "http.response.body", "body": body, "more_body": False})
+            return
+
+        await self._inner(scope, receive, send)
+
+
+mcp_app = _BearerASGI(mcp.http_app())
