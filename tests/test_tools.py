@@ -124,7 +124,11 @@ async def test_generate_image_success(async_http_client: Any, monkeypatch) -> No
 
     result = await images.generate_image("prompt")
 
-    assert result["data"] == payload
+    assert len(result) == 2
+    assert result[0].type == "text"
+    assert result[1].type == "image"
+    assert result[1].mimeType == "image/png"
+    assert result[1].data == payload
 
 
 @pytest.mark.asyncio

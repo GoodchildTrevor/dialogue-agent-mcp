@@ -1,7 +1,7 @@
-import base64
 from typing import Any
 
 import httpx
+from mcp.types import ImageContent, TextContent
 
 from app import mcp, settings, get_http_client
 from app.utils.validations import (
@@ -24,7 +24,7 @@ def _image_generation_url() -> str:
 async def generate_image(
     prompt: str,
     size: str | None = None,
-) -> dict[str, Any]:
+) -> list[TextContent | ImageContent]:
     """Generate an image from the configured backend service.
     :param prompt: The prompt to generate the image from.
     :param size: The size of the image to generate.
@@ -67,11 +67,8 @@ async def generate_image(
         raise RuntimeError("Image backend returned an unexpected response")
 
     b64_string = data[0]["b64_json"]
-    image_bytes = base64.b64decode(b64_string)
 
-    return {
-        "type": "image",
-        "data": b64_string,
-        "mimeType": "image/png",
-        "_bytes": image_bytes,
-    }
+    return [
+        TextContent(type="text", text=f"Generated image (size: {size})."),
+        ImageContent(type="image", mimeType="image/png", data=b64_string),
+    ]
