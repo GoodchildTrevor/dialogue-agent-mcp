@@ -6,7 +6,14 @@ from app import log, settings, http_client
 
 
 async def call_external(base_url: str, arguments: dict[str, Any]) -> dict[str, Any]:
-    """POST arguments to an ExternalToolAdapter's /invoke endpoint with retry logic."""
+    """POST arguments to an ExternalToolAdapter's /invoke endpoint with retry logic.
+
+    :param base_url: The base URL of the external tool adapter service
+    :param arguments: A dictionary of arguments to pass to the external tool
+    :returns: A dictionary containing the response payload from the external tool
+    :raises ValueError: If base_url is empty or arguments is not a dictionary
+    :raises RuntimeError: If the external service call fails after all retries
+    """
     if not base_url or not isinstance(base_url, str):
         raise ValueError("base_url must be a non-empty string")
     if not isinstance(arguments, dict):
