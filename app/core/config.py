@@ -12,6 +12,8 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
+    MCP_AUTH_TOKEN: str  # Required - no default, fails fast with a clear error
+
     DOCUMENT_SEARCHER_URL: str = "http://document_searcher:8091"
     DOCUMENT_SEARCHER_API_KEY: str = ""
     DOCUMENT_SEARCHER_DEFAULT_COLLECTION: str = "documents"
@@ -19,7 +21,7 @@ class Settings(BaseSettings):
     WEB_SEARCHER_URL: str = "http://web_searcher:8093"
     IMAGE_BACKEND_URL: str = "http://image_generator:8094"
     
-    IMAGE_VALID_SIZES: list[str] = ["256x256", "512x512", "1024x1024"]
+    IMAGE_VALID_SIZES: list[str] = ["1024x1024"]
     TOOL_REQUEST_TIMEOUT_SECONDS: float = 45.0
 
     MAX_RETRIES: int = 3

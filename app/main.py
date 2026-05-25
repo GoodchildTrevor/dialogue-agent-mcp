@@ -14,12 +14,12 @@ Auth: requests without a valid Authorization: Bearer <token> header
 from __future__ import annotations
 
 import json
-import os
 
 import app.tools  # noqa: F401  register tools with mcp
 from app import mcp
+from app.core.config import get_settings
 
-_token = os.environ["MCP_AUTH_TOKEN"]
+_token = get_settings().MCP_AUTH_TOKEN
 
 
 class _BearerASGI:
