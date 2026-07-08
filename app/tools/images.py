@@ -45,6 +45,7 @@ async def generate_image(
 
     url = _image_generation_url()
     body: dict[str, Any] = {
+        "model": settings.IMAGE_MODEL,
         "prompt": prompt,
         "n": 1,
         "size": size,
@@ -54,12 +55,14 @@ async def generate_image(
     try:
         response = await http_client.post(url, json=body)
         response.raise_for_status()
-    except (httpx.RequestError, httpx.HTTPStatusError) as exc:
-        message = (
-            f"Unable to reach the image backend at {url}."
-            " Please check IMAGE_BACKEND_URL and backend health."
-        )
-        raise RuntimeError(message) from exc
+    except httpx.RequestError as exc:
+        raise RuntimeError(
+            f"Network error reaching image backend at {url}: {exc}"
+        ) from exc
+    except httpx.HTTPStatusError as exc:
+        raise RuntimeError(
+            f"Image backend returned HTTP {exc.response.status_code}: {exc.response.text}"
+        ) from exc
 
     payload = response.json()
     data = payload.get("data")
@@ -67,8 +70,9 @@ async def generate_image(
         raise RuntimeError("Image backend returned an unexpected response")
 
     b64_string = data[0]["b64_json"]
+    mime_type = settings.IMAGE_MIME_TYPE
 
     return [
         TextContent(type="text", text=f"Generated image (size: {size})."),
-        ImageContent(type="image", mimeType="image/png", data=b64_string),
+        ImageContent(type="image", mimeType=mime_type, data=b64_string),
     ]
