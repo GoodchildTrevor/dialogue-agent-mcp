@@ -20,8 +20,10 @@ class Settings(BaseSettings):
     FILE_VIEWER_URL: str = "http://file_viewer:8092"
     WEB_SEARCHER_URL: str = "http://web_searcher:8093"
     IMAGE_BACKEND_URL: str = "http://image_generator:8094"
-    
+
     IMAGE_VALID_SIZES: list[str] = ["1024x1024"]
+    IMAGE_MODEL: str = "dall-e-3"
+    IMAGE_MIME_TYPE: str = "image/png"
     TOOL_REQUEST_TIMEOUT_SECONDS: float = 45.0
 
     MAX_RETRIES: int = 3
@@ -40,4 +42,3 @@ def override_settings(settings: Settings) -> None:
 def reset_settings() -> None:
     global _settings_cache
     _settings_cache = None
-    
