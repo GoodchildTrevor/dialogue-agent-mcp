@@ -21,3 +21,6 @@ venv/
 # Misc
 .DS_Store
 *.log
+
+# Local collections config (copy from collections.example.json)
+collections.json

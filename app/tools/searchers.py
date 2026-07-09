@@ -1,6 +1,7 @@
 from typing import Any
 
 from app import mcp, settings, get_http_client
+from app.core.config import DOCUMENT_COLLECTIONS
 from app.core.http_client import BaseAPIClient
 from app.utils.validations import _validate_query, _validate_limit
 
@@ -78,29 +79,52 @@ _doc_client = _DocumentSearcherClient()
 _web_client = _WebSearcherClient()
 
 
+def _collections_hint() -> str:
+    """Build a human-readable collection list for the tool docstring."""
+    if not DOCUMENT_COLLECTIONS:
+        return f'"{settings.DOCUMENT_SEARCHER_DEFAULT_COLLECTION}" (default)'
+    return "; ".join(f'"{k}" — {v}' for k, v in DOCUMENT_COLLECTIONS.items())
+
+
+def _resolve_collection(collection: str | None) -> str:
+    """Validate and return the collection name.
+
+    If DOCUMENT_COLLECTIONS is configured, the requested collection must be
+    one of the known keys. Falls back to the default collection when None.
+    """
+    if collection is None:
+        return settings.DOCUMENT_SEARCHER_DEFAULT_COLLECTION
+    if DOCUMENT_COLLECTIONS and collection not in DOCUMENT_COLLECTIONS:
+        known = list(DOCUMENT_COLLECTIONS.keys())
+        raise ValueError(f"Unknown collection {collection!r}. Available: {known}")
+    return collection
+
+
+_DOC_SEARCH_DOC = f"""Search corporate documents via qdrant-searcher hybrid search endpoint.
+
+Available collections: {_collections_hint()}
+Choose the most relevant collection based on the query topic.
+
+:param query: The query to search for.
+:param collection: Collection name to search. Must be one of the available collections listed above.
+    Omit to use the default collection.
+:param file_id: Optional file UUID to restrict search to a specific uploaded file.
+:param limit: The number of results to return.
+:return: The search results.
+"""
+
+
 @mcp.tool()
 async def document_searcher(
     query: str,
+    collection: str | None = None,
     file_id: str | None = None,
-    filters: dict[str, Any] | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Search corporate documents via qdrant-searcher hybrid search endpoint.
-    :param query: The query to search for.
-    :param file_id: Optional file UUID to restrict search to a specific uploaded file.
-    :param filters: The filters to apply to the search.
-    :param limit: The number of results to return.
-    :return: The search results.
-    """
     query = _validate_query(query)
-    if filters is not None and not isinstance(filters, dict):
-        raise TypeError("filters must be a dictionary")
     limit = _validate_limit(limit, default=10)
-
-    collection = (filters or {}).get("collection", settings.DOCUMENT_SEARCHER_DEFAULT_COLLECTION)
-    method = (filters or {}).get("method", "hybrid")
-    if method not in ("hybrid", "dense"):
-        method = "hybrid"
+    collection = _resolve_collection(collection)
+    method = "hybrid"
 
     data = await _doc_client.search(
         query=query,
@@ -125,7 +149,10 @@ async def document_searcher(
         for doc in raw_docs
         if doc
     ]
-    return {"query": query, "results": results}
+    return {"query": query, "collection": collection, "results": results}
+
+
+document_searcher.__doc__ = _DOC_SEARCH_DOC
 
 
 @mcp.tool()
