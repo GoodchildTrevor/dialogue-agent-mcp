@@ -36,10 +36,17 @@ def _resolve_size(size: str | None) -> str:
         return settings.IMAGE_VALID_SIZES[0]
     if not isinstance(size, str):
         raise TypeError("size must be a string")
-    size = _validate_format(size)
-    if size not in settings.IMAGE_VALID_SIZES:
-        raise ValueError(f"size must be one of {settings.IMAGE_VALID_SIZES}")
-    return size
+    # Normalise resolution tiers to uppercase so '1k' -> '1K' etc.
+    normalised = size.strip().upper()
+    # Check resolution tiers first (512, 1K, 2K, 4K)
+    if normalised in {s.upper() for s in settings.IMAGE_VALID_SIZES}:
+        return normalised
+    # Fall back to WxH format check (case-insensitive)
+    lower = size.strip().lower()
+    for valid in settings.IMAGE_VALID_SIZES:
+        if valid.lower() == lower:
+            return valid
+    raise ValueError(f"size must be one of {settings.IMAGE_VALID_SIZES}")
 
 
 @mcp.tool()
@@ -49,7 +56,7 @@ async def generate_image(
 ) -> list[TextContent | ImageContent]:
     """Generate an image from the configured backend service.
     :param prompt: The prompt to generate the image from.
-    :param size: The size of the image to generate.
+    :param size: The size/resolution of the image. Allowed values: 512, 1K, 2K, 4K, or WxH format like 1024x1024.
     :return: The generated image.
     """
     prompt = _validate_query(prompt, max_length=2000)
@@ -101,7 +108,7 @@ async def edit_image(
     :param image_b64: Base64-encoded image to edit.
     :param mime_type: MIME type of the image (e.g. 'image/png', 'image/webp').
     :param mask_b64: Optional base64-encoded mask (PNG with transparency) defining the edit area.
-    :param size: Output image size. Defaults to the first configured valid size.
+    :param size: Output image size. Allowed values: 512, 1K, 2K, 4K, or WxH format like 1024x1024.
     :return: The edited image.
     """
     prompt = _validate_query(prompt, max_length=2000)
